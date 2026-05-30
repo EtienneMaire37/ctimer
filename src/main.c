@@ -12,7 +12,7 @@ int main(int argc, char** argv)
     FILE* input_file = NULL;
     if (argc != 2)
     {
-        if (isatty(STDIN_FILENO))
+        if (argc != 0 || isatty(STDIN_FILENO))
         {
             print_usage();
             return 1;
