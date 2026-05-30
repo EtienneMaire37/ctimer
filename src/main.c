@@ -6,7 +6,6 @@
 
 void sigwinch()
 {
-    border(0, 0, 0, 0, 0, 0, 0, 0);
     refresh();
 }
 
@@ -25,6 +24,13 @@ int main()
     resize_term(15, 2 * 12);
 
     border(0, 0, 0, 0, 0, 0, 0, 0);
+    mvaddstr(1, 2, "TITLE");
+    mvaddstr(3, 3, "- Split 1");
+    mvaddstr(4, 3, "- Split 2");
+    mvaddstr(5, 3, "- Split 3");
+    mvaddstr(6, 3, "- Split 4");
+    mvaddstr(7, 3, "- Split 5");
+
     refresh();
     while (true)
         ;
