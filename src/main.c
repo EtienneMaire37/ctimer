@@ -7,6 +7,7 @@
 
 #include "usage.h"
 #include "signals.h"
+#include "parser.h"
 
 int main(int argc, char** argv)
 {
@@ -48,7 +49,10 @@ int main(int argc, char** argv)
     fread(xml_data, st.st_size, 1, input_file);
     // fwrite(xml_data, st.st_size, 1, stdout);
 
-    // return 0;
+    xml_tag_t* first_tag = xml_load_from_text(xml_data);
+    xml_print_data(first_tag);
+
+    return 0;
 
     atexit((void*)endwin);
     setup_signals();
