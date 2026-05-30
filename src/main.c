@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <sys/stat.h>
 
 #include "usage.h"
 #include "signals.h"
@@ -30,6 +31,24 @@ int main(int argc, char** argv)
             return 1;
         }
     }
+
+    struct stat st;
+    if (fstat(fileno(input_file), &st) != 0)
+    {
+        perror("ctimer");
+        return 2;
+    }
+
+    char* xml_data = malloc(st.st_size);
+    if (!xml_data)
+    {
+        perror("ctimer");
+        return 2;
+    }
+    fread(xml_data, st.st_size, 1, input_file);
+    // fwrite(xml_data, st.st_size, 1, stdout);
+
+    // return 0;
 
     atexit((void*)endwin);
     setup_signals();

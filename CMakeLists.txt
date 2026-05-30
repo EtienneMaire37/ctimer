@@ -9,9 +9,11 @@ set(CMAKE_C_COMPILER gcc)
 
 find_package(Curses)
 
-file(GLOB SOURCES ${SRC_DIR}/main.c)
+file(GLOB SOURCES ${SRC_DIR}/*.c)
 
 add_executable(ctimer ${SOURCES})
+
+set_property(TARGET ctimer PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
 
 target_link_libraries(ctimer ncurses panel menu)
 target_include_directories(ctimer PRIVATE ${SRC_DIR})
