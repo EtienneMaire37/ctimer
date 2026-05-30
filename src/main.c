@@ -1,20 +1,38 @@
 #include <ncurses.h>
-#include <panel.h>
-#include <signal.h>
 #include <stdbool.h>
+#include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 
-void sigwinch()
-{
-    refresh();
-}
+#include "usage.h"
+#include "signals.h"
 
-int main()
+int main(int argc, char** argv)
 {
+    FILE* input_file = NULL;
+    if (argc != 2)
+    {
+        if (isatty(STDIN_FILENO))
+        {
+            print_usage();
+            return 1;
+        }
+        input_file = stdin;
+    }
+    if (!input_file)
+    {
+        input_file = fopen(argv[1], "rb");
+        if (!input_file)
+        {
+            char err_str[33] = {0};
+            snprintf(err_str, sizeof(err_str) - 1, "ctimer: `%s`", argv[1]);
+            perror(err_str);
+            return 1;
+        }
+    }
+
     atexit((void*)endwin);
-    for (int i = 0; i < SIGRTMIN; i++)
-        signal(i, exit);
-    signal(SIGWINCH, sigwinch);
+    setup_signals();
 
     WINDOW* scr = initscr();
     noecho();
