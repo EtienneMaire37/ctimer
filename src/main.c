@@ -48,8 +48,14 @@ int main(int argc, char** argv)
     }
     fread(xml_data, st.st_size, 1, input_file);
 
-    // xml_tag_t* first_tag = xml_load_from_text(xml_data);
-    // xml_tag_recursive_destroy(first_tag);
+    xml_tag_t* first_tag = xml_load_from_text(xml_data);
+
+    xml_tag_t* GameName = xml_get_tag(first_tag, "Run/GameName");
+    if (!GameName)
+    {
+        fprintf(stderr, "Invalid .lss file!");
+        return 3;
+    }
 
     atexit((void*)endwin);
     setup_signals();
@@ -62,7 +68,7 @@ int main(int argc, char** argv)
     resize_term(15, 2 * 12);
 
     border(0, 0, 0, 0, 0, 0, 0, 0);
-    mvaddstr(1, 2, "TITLE");
+    mvaddstr(1, 2, GameName->data);
     mvaddstr(3, 3, "- Split 1");
     mvaddstr(4, 3, "- Split 2");
     mvaddstr(5, 3, "- Split 3");

@@ -135,7 +135,7 @@ xml_tag_t* xml_load_from_text(const char* data)
 static void _xml_print_data(xml_tag_t* tag, int depth)
 {
     if (!tag) return;
-    printf("%*s<%s", 4 * depth, "", tag->name);
+    printf("<%s", tag->name);
     xml_tag_t* child = tag->in;
     printf(">");
     while (child)
@@ -144,8 +144,8 @@ static void _xml_print_data(xml_tag_t* tag, int depth)
         child = child->next;
     }
     if (strcmp(tag->data, "") != 0)
-        printf("%*s%s", 4 * depth, "", tag->data);
-    printf("%*s</%s>\n", 4 * depth, "", tag->name);
+        printf("%s", tag->data);
+    printf("</%s>\n", tag->name);
 }
 
 void xml_print_data(xml_tag_t* first_tag)
@@ -155,4 +155,24 @@ void xml_print_data(xml_tag_t* first_tag)
         _xml_print_data(first_tag, 0);
         first_tag = first_tag->next;
     }
+}
+
+xml_tag_t* xml_get_tag(xml_tag_t* first_tag, const char* path)
+{
+    size_t len = strlen(path);
+    char* buffer = alloca(len + 1);
+    memcpy(buffer, path, len + 1);
+    const char* current_token = strtok(buffer, "/");
+    if (!current_token) return NULL;
+    while (first_tag)
+    {
+        if (strcmp(current_token, first_tag->name) == 0)
+        {
+            current_token = strtok(NULL, "/");
+            if (!current_token) return first_tag;
+            first_tag = first_tag->in;
+        }
+        first_tag = first_tag->next;
+    }
+    return NULL;
 }

@@ -12,3 +12,4 @@ void xml_tag_free(xml_tag_t* tag);
 void xml_tag_recursive_destroy(xml_tag_t* tag);
 xml_tag_t* xml_load_from_text(const char* data);
 void xml_print_data(xml_tag_t* first_tag);
+xml_tag_t* xml_get_tag(xml_tag_t* first_tag, const char* path);
