@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/stat.h>
+#include <string.h>
 
 #include "usage.h"
 #include "signals.h"
@@ -56,6 +57,18 @@ int main(int argc, char** argv)
         fprintf(stderr, "Invalid .lss file!");
         return 3;
     }
+    xml_tag_t* CategoryName = xml_get_tag(first_tag, "Run/CategoryName");
+    if (!CategoryName)
+    {
+        fprintf(stderr, "Invalid .lss file!");
+        return 3;
+    }
+    xml_tag_t* Segment = xml_get_tag(first_tag, "Run/Segments/Segment");
+    if (!Segment)
+    {
+        fprintf(stderr, "No segments!");
+        return 3;
+    }
 
     atexit((void*)endwin);
     setup_signals();
@@ -69,11 +82,34 @@ int main(int argc, char** argv)
 
     border(0, 0, 0, 0, 0, 0, 0, 0);
     mvaddstr(1, 2, GameName->data);
-    mvaddstr(3, 3, "- Split 1");
-    mvaddstr(4, 3, "- Split 2");
-    mvaddstr(5, 3, "- Split 3");
-    mvaddstr(6, 3, "- Split 4");
-    mvaddstr(7, 3, "- Split 5");
+    mvaddstr(1, 2 + strlen(GameName->data), " - ");
+    mvaddstr(1, 2 + strlen(GameName->data) + 3, CategoryName->data);
+    int seg = 0;
+    while (Segment && seg < 8)
+    {
+        mvaddstr(3 + seg, 3, "* ");
+        if (strlen(Segment->in->data) >= 2 * 12 - 5 - 3 + 1)
+        {
+            Segment->in->data[2 * 12 - 5 - 4] = '-';
+            Segment->in->data[2 * 12 - 5 - 3] = 0;
+        }
+        if (Segment->in) mvaddstr(3 + seg, 3 + 2, Segment->in->data);
+        Segment = Segment->next;
+        seg++;
+    }
+
+    if (Segment && Segment->next)
+    {
+        while (Segment->next)
+            Segment = Segment->next;
+        mvaddstr(3 + 9, 3, "* ");
+        if (strlen(Segment->in->data) >= 2 * 12 - 5 - 3 + 1)
+        {
+            Segment->in->data[2 * 12 - 5 - 4] = '-';
+            Segment->in->data[2 * 12 - 5 - 3] = 0;
+        }
+        if (Segment->in) mvaddstr(3 + 9, 3 + 2, Segment->in->data);
+    }
 
     refresh();
     while (true)
