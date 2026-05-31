@@ -63,19 +63,8 @@ xml_tag_t* xml_load_from_text(const char* data)
     bool in_tag = false, in_string = false;
     while (*data)
     {
-        while (*data && (*data != '<' || in_string))
-        {
-            if (*data == '>')
-                in_tag = false;
-            if (*data == '\"')
-                in_string ^= true;
-            if (*data == '/' && in_tag && !in_string)
-            {
-                current_tag = parent_tag;
-                if (parent_tag) parent_tag = parent_tag->out;
-            }
+        while (*data && *data != '<')
             data++;
-        }
         if (!*data) break;
         in_tag = true;
         in_string = false;
@@ -92,13 +81,31 @@ xml_tag_t* xml_load_from_text(const char* data)
         }
         else
         {
+            bool single_tag = false;
             const char* node_name = data++;
             char first_char = *node_name;
             while (*data && !isspace(*data) && *data != '>' && (first_char == '!' || *data != '/'))
                 data++;
             if (!*data) break;
             size_t node_name_len = (uintptr_t)data - (uintptr_t)node_name;
-            xml_tag_t* new_tag = xml_tag_create_from_buffers(node_name, node_name_len, "", 0);
+            while (*data && (*data != '>' || in_string))
+            {
+                if (*data == '>')
+                    in_tag = false;
+                if (*data == '\"')
+                    in_string ^= true;
+                if (*data == '/' && in_tag && !in_string)
+                    single_tag = true;
+                data++;
+            }
+            if (!*data) break;
+            data++;
+            const char* node_data = data;
+            while (*data && *data != '<')
+                data++;
+            if (!*data) break;
+            size_t node_data_len = (uintptr_t)data - (uintptr_t)node_data;
+            xml_tag_t* new_tag = xml_tag_create_from_buffers(node_name, node_name_len, node_data, node_data_len);
             assert(new_tag);
             if (current_tag)
             {
@@ -110,7 +117,7 @@ xml_tag_t* xml_load_from_text(const char* data)
             new_tag->out = parent_tag;
             if (!first_tag)
                 first_tag = new_tag;
-            if (first_char == '?' || first_char == '!')
+            if (first_char == '?' || first_char == '!' || single_tag)
             {
                 current_tag = new_tag;
                 in_tag = false;
@@ -131,20 +138,15 @@ static void _xml_print_data(xml_tag_t* tag, int depth)
     if (!tag) return;
     printf("%*s<%s", 4 * depth, "", tag->name);
     xml_tag_t* child = tag->in;
-    if (child || strcmp(tag->data, ""))
+    printf(">");
+    while (child)
     {
-        printf(">\n");
-        while (child)
-        {
-            _xml_print_data(child, depth + 1);
-            child = child->next;
-        }
-        if (strcmp(tag->data, "") != 0)
-            printf("%*s%s\n", 4 * depth, "", tag->data);
-        printf("%*s</%s>\n", 4 * depth, "", tag->name);
+        _xml_print_data(child, depth + 1);
+        child = child->next;
     }
-    else
-        printf("%s>\n", tag->name[0] == '?' ? "?" : (tag->name[0] != '!' ? "/" : ""));
+    if (strcmp(tag->data, "") != 0)
+        printf("%*s%s", 4 * depth, "", tag->data);
+    printf("%*s</%s>\n", 4 * depth, "", tag->name);
 }
 
 void xml_print_data(xml_tag_t* first_tag)
