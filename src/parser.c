@@ -5,24 +5,29 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdbool.h>
+#include <stdint.h>
 
-xml_tag_t* xml_tag_create(const char* name, const char* data)
+xml_tag_t* xml_tag_create_from_buffers(const char* name, size_t name_len, const char* data, size_t data_len)
 {
     xml_tag_t* tag = malloc(sizeof(*tag));
     if (!tag) return NULL;
-    tag->name = strdup(name);
+    tag->name = malloc(name_len + 1);
     if (!tag->name)
     {
         free(tag);
         return NULL;
     }
-    tag->data = strdup(data);
+    memcpy(tag->name, name, name_len);
+    tag->name[name_len] = 0;
+    tag->data = malloc(data_len + 1);
     if (!tag->data)
     {
         free(tag->name);
         free(tag);
         return NULL;
     }
+    memcpy(tag->data, data, data_len);
+    tag->data[data_len] = 0;
     tag->next = tag->prev = tag->in = tag->out = NULL;
     return tag;
 }
@@ -87,7 +92,13 @@ xml_tag_t* xml_load_from_text(const char* data)
         }
         else
         {
-            xml_tag_t* new_tag = xml_tag_create("Node", "");
+            const char* node_name = data++;
+            char first_char = *node_name;
+            while (*data && !isspace(*data) && *data != '>' && (first_char == '!' || *data != '/'))
+                data++;
+            if (!*data) break;
+            size_t node_name_len = (uintptr_t)data - (uintptr_t)node_name;
+            xml_tag_t* new_tag = xml_tag_create_from_buffers(node_name, node_name_len, "", 0);
             assert(new_tag);
             if (current_tag)
             {
@@ -99,7 +110,7 @@ xml_tag_t* xml_load_from_text(const char* data)
             new_tag->out = parent_tag;
             if (!first_tag)
                 first_tag = new_tag;
-            if (*data == '?' || *data == '!')
+            if (first_char == '?' || first_char == '!')
             {
                 current_tag = new_tag;
                 in_tag = false;
@@ -110,7 +121,6 @@ xml_tag_t* xml_load_from_text(const char* data)
                 parent_tag = new_tag;
                 current_tag = NULL;
             }
-            data++;
         }
     }
     return first_tag;
@@ -119,16 +129,22 @@ xml_tag_t* xml_load_from_text(const char* data)
 static void _xml_print_data(xml_tag_t* tag, int depth)
 {
     if (!tag) return;
-    printf("%*s<%s>\n", 4 * depth, "", tag->name);
+    printf("%*s<%s", 4 * depth, "", tag->name);
     xml_tag_t* child = tag->in;
-    while (child)
+    if (child || strcmp(tag->data, ""))
     {
-        _xml_print_data(child, depth + 1);
-        child = child->next;
+        printf(">\n");
+        while (child)
+        {
+            _xml_print_data(child, depth + 1);
+            child = child->next;
+        }
+        if (strcmp(tag->data, "") != 0)
+            printf("%*s%s\n", 4 * depth, "", tag->data);
+        printf("%*s</%s>\n", 4 * depth, "", tag->name);
     }
-    if (strcmp(tag->data, "") != 0)
-        printf("%*s%s\n", 4 * depth, "", tag->data);
-    printf("%*s</%s>\n", 4 * depth, "", tag->name);
+    else
+        printf("%s>\n", tag->name[0] == '?' ? "?" : (tag->name[0] != '!' ? "/" : ""));
 }
 
 void xml_print_data(xml_tag_t* first_tag)
