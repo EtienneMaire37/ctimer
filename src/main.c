@@ -47,12 +47,9 @@ int main(int argc, char** argv)
         return 2;
     }
     fread(xml_data, st.st_size, 1, input_file);
-    // fwrite(xml_data, st.st_size, 1, stdout);
 
-    xml_tag_t* first_tag = xml_load_from_text(xml_data);
-    xml_print_data(first_tag);
-
-    return 0;
+    // xml_tag_t* first_tag = xml_load_from_text(xml_data);
+    // xml_tag_recursive_destroy(first_tag);
 
     atexit((void*)endwin);
     setup_signals();

@@ -34,6 +34,7 @@ xml_tag_t* xml_tag_create_from_buffers(const char* name, size_t name_len, const 
 
 void xml_tag_free(xml_tag_t* tag)
 {
+    if (!tag) return;
     free(tag->name);
     free(tag->data);
     free(tag);
@@ -41,19 +42,17 @@ void xml_tag_free(xml_tag_t* tag)
 
 static void _xml_tag_recursive_destroy(xml_tag_t* tag)
 {
-    assert(tag);
-    if (tag->in)
-        _xml_tag_recursive_destroy(tag->in);
-    if (tag->next)
-        _xml_tag_recursive_destroy(tag->next);
+    if (!tag) return;
+    _xml_tag_recursive_destroy(tag->in);
+    _xml_tag_recursive_destroy(tag->next);
     xml_tag_free(tag);
 }
 
 void xml_tag_recursive_destroy(xml_tag_t* tag)
 {
-    assert(tag);
+    if (!tag) return;
     _xml_tag_recursive_destroy(tag->in);
-    tag->out->in = tag->next;
+    if (tag->out) tag->out->in = tag->next;
     xml_tag_free(tag);
 }
 
