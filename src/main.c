@@ -10,6 +10,70 @@
 #include "signals.h"
 #include "parser.h"
 
+bool setup_rendering_and_xml_data = false;
+xml_tag_t* first_tag;
+xml_tag_t *GameName, *CategoryName, *FirstSegment;
+
+void print_at(int x, int y, char (*filter)(int, int, char), const char* fmt, ...)
+{
+    char buffer[BUFSIZ];
+
+    va_list list;
+    va_start(list, fmt);
+
+    int written = vsnprintf(buffer, sizeof(buffer) - 1, fmt, list);
+
+    va_end(list);
+
+    for (int i = 0; i < written; x++, i++)
+    {
+        char flt = filter(x, y, buffer[i]);
+        if (!flt)
+            continue;
+
+        mvaddch(y, x, flt);
+    }
+}
+
+char simple_filter(int x, int y, char ch)
+{
+    if (x < 1 || y < 1 || x > COLS - 2 || y > LINES - 2) return 0;
+    if (x == COLS - 2) return '-';
+    return ch;
+}
+
+void sigwinch()
+{
+    if (!setup_rendering_and_xml_data) return;
+
+    endwin();
+    initscr();
+
+    clear();
+
+    border(0, 0, 0, 0, 0, 0, 0, 0);
+    print_at(2, 1, simple_filter, "%s - %s", GameName->data, CategoryName->data);
+    int seg = 0;
+    xml_tag_t* Segment = FirstSegment;
+    while (Segment && seg < LINES - 7)
+    {
+        if (Segment->in)
+            print_at(3, 3 + seg, simple_filter, "* %s", Segment->in->data);
+        Segment = Segment->next;
+        seg++;
+    }
+
+    if (Segment && LINES > 7)
+    {
+        while (Segment->next)
+            Segment = Segment->next;
+        if (Segment->in)
+            print_at(3, LINES - 3, simple_filter, "* %s", Segment->in->data);
+    }
+
+    refresh();
+}
+
 int main(int argc, char** argv)
 {
     FILE* input_file = NULL;
@@ -49,22 +113,22 @@ int main(int argc, char** argv)
     }
     fread(xml_data, st.st_size, 1, input_file);
 
-    xml_tag_t* first_tag = xml_load_from_text(xml_data);
+    first_tag = xml_load_from_text(xml_data);
 
-    xml_tag_t* GameName = xml_get_tag(first_tag, "Run/GameName");
+    GameName = xml_get_tag(first_tag, "Run/GameName");
     if (!GameName)
     {
         fprintf(stderr, "Invalid .lss file!");
         return 3;
     }
-    xml_tag_t* CategoryName = xml_get_tag(first_tag, "Run/CategoryName");
+    CategoryName = xml_get_tag(first_tag, "Run/CategoryName");
     if (!CategoryName)
     {
         fprintf(stderr, "Invalid .lss file!");
         return 3;
     }
-    xml_tag_t* Segment = xml_get_tag(first_tag, "Run/Segments/Segment");
-    if (!Segment)
+    FirstSegment = xml_get_tag(first_tag, "Run/Segments/Segment");
+    if (!FirstSegment)
     {
         fprintf(stderr, "No segments!");
         return 3;
@@ -72,48 +136,19 @@ int main(int argc, char** argv)
 
     atexit((void*)endwin);
     setup_signals();
+    signal(SIGWINCH, sigwinch);
 
-    WINDOW* scr = initscr();
+    initscr();
     noecho();
     cbreak();
     curs_set(0);
-    // * do NOT use resizeterm as it modifies the SIGWINCH handler
-    resize_term(15, 2 * 12);
 
-    border(0, 0, 0, 0, 0, 0, 0, 0);
-    mvaddstr(1, 2, GameName->data);
-    mvaddstr(1, 2 + strlen(GameName->data), " - ");
-    mvaddstr(1, 2 + strlen(GameName->data) + 3, CategoryName->data);
-    int seg = 0;
-    while (Segment && seg < 8)
-    {
-        mvaddstr(3 + seg, 3, "* ");
-        if (strlen(Segment->in->data) >= 2 * 12 - 5 - 3 + 1)
-        {
-            Segment->in->data[2 * 12 - 5 - 4] = '-';
-            Segment->in->data[2 * 12 - 5 - 3] = 0;
-        }
-        if (Segment->in) mvaddstr(3 + seg, 3 + 2, Segment->in->data);
-        Segment = Segment->next;
-        seg++;
-    }
+    setup_rendering_and_xml_data = true;
 
-    if (Segment && Segment->next)
-    {
-        while (Segment->next)
-            Segment = Segment->next;
-        mvaddstr(3 + 9, 3, "* ");
-        if (strlen(Segment->in->data) >= 2 * 12 - 5 - 3 + 1)
-        {
-            Segment->in->data[2 * 12 - 5 - 4] = '-';
-            Segment->in->data[2 * 12 - 5 - 3] = 0;
-        }
-        if (Segment->in) mvaddstr(3 + 9, 3 + 2, Segment->in->data);
-    }
+    sigwinch();
 
-    refresh();
     while (true)
-        ;
+        pause();
 
     endwin();
 }
