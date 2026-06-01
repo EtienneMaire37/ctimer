@@ -9,7 +9,7 @@ set(CMAKE_C_COMPILER gcc)
 
 find_package(Curses)
 
-file(GLOB SOURCES ${SRC_DIR}/*.c)
+file(GLOB SOURCES ${SRC_DIR}/main.c ${SRC_DIR}/parser.c ${SRC_DIR}/print.c ${SRC_DIR}/input.c ${SRC_DIR}/timer.c)
 
 add_executable(ctimer ${SOURCES})
 

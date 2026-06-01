@@ -10,15 +10,13 @@
 #include <sys/stat.h>
 #include <string.h>
 #include <stdatomic.h>
-#include <sys/ioctl.h>
-#include <linux/input.h>
-#include <fcntl.h>
-#include <sys/select.h>
-#include <assert.h>
 
 #include "usage.h"
 #include "signals.h"
 #include "parser.h"
+#include "input.h"
+#include "timer.h"
+#include "print.h"
 
 bool setup_rendering_and_xml_data = false;
 xml_tag_t* first_tag;
@@ -26,39 +24,7 @@ xml_tag_t *GameName, *CategoryName, *FirstSegment;
 
 struct timespec last_time = {0};
 
-char ____event_buffer[32] = {0};
-#define event_(n) ({ snprintf(____event_buffer, sizeof(____event_buffer) - 1, "/dev/input/event%u", (n)); ____event_buffer; })
-
-void print_at(int x, int y, char (*filter)(int, int, char), const char* fmt, ...)
-{
-    char buffer[BUFSIZ];
-
-    va_list list;
-    va_start(list, fmt);
-
-    int written = vsnprintf(buffer, sizeof(buffer) - 1, fmt, list);
-
-    va_end(list);
-
-    for (int i = 0; i < written; x++, i++)
-    {
-        char flt = filter(x, y, buffer[i]);
-        if (!flt)
-            continue;
-
-        mvaddch(y, x, flt);
-    }
-}
-
-char simple_filter(int x, int y, char ch)
-{
-    if (x < 1 || y < 1 || x > COLS - 2 || y > LINES - 2) return 0;
-    if (x == COLS - 2) return '-';
-    return ch;
-}
-
 atomic_flag sigwinch_test = ATOMIC_FLAG_INIT;
-bool timer_ispaused = true;
 
 void sigwinch(int sig)
 {
@@ -115,13 +81,6 @@ void sigwinch(int sig)
     refresh();
 
     atomic_flag_clear(&sigwinch_test);
-}
-
-bool is_keyboard(int fd)
-{
-    unsigned long key_bitmask[EV_MAX / 8 + 1] = {0};
-
-    return ioctl(fd, EVIOCGBIT(EV_KEY, sizeof(key_bitmask)), key_bitmask) >= 0;
 }
 
 int main(int argc, char** argv)
@@ -184,21 +143,7 @@ int main(int argc, char** argv)
         return 3;
     }
 
-    // TODO: Make this portable
-    int keyboard_fd = -1;
-    int i = 0;
-    while ((keyboard_fd = open(event_(i++), O_RDONLY | O_NONBLOCK)) != -1)
-    {
-        if (is_keyboard(keyboard_fd)) break;
-        close(keyboard_fd);
-    }
-    if (keyboard_fd == -1)
-    {
-        char buffer[32];
-        snprintf(buffer, sizeof(buffer) - 1, "ctimer: `%s`", event_(i - 1));
-        perror(buffer);
-        abort();
-    }
+    init_keyboard();
 
     clock_gettime(CLOCK_REALTIME, &last_time);
 
@@ -214,37 +159,11 @@ int main(int argc, char** argv)
     setup_rendering_and_xml_data = true;
 
     sigwinch(SIGWINCH);
-    sigwinch(0);
 
     while (true)
     {
-        struct timespec timeout = { .tv_sec = 0, .tv_nsec = 10000000 };
-        fd_set rd_set;
-        FD_ZERO(&rd_set);
-        FD_SET(keyboard_fd, &rd_set);
-        pselect(keyboard_fd + 1, &rd_set, NULL, NULL, &timeout, NULL);
         sigwinch(0);
-        if (FD_ISSET(keyboard_fd, &rd_set))
-        {
-            struct input_event event;
-            if (read(keyboard_fd, &event, sizeof(event)))
-            {
-                if (event.type == EV_KEY)
-                {
-                    if (event.value == 1)
-                    {
-                        switch (event.code)
-                        {
-                        case KEY_F1:
-                            timer_ispaused ^= true;
-                            break;
-                        default:
-                            ;
-                        }
-                    }
-                }
-            }
-        }
+        handle_input_and_timeout();
     }
 
     endwin();
