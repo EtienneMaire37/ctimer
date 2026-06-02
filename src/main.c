@@ -32,8 +32,6 @@ void sigwinch(int sig)
 
     if (atomic_flag_test_and_set(&sigwinch_test)) return;
 
-    static float elapsed_time = 0;
-
     if (sig == SIGWINCH)
     {
         endwin();

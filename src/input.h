@@ -61,6 +61,14 @@ static inline void handle_input_and_timeout()
                     switch (event.code)
                     {
                     case KEY_F1:
+                        if (timer_ispaused)
+                            timer_ispaused = false;
+                        break;
+                    case KEY_F2:
+                        timer_ispaused = true;
+                        elapsed_time = 0;
+                        break;
+                    case KEY_F3:
                         timer_ispaused ^= true;
                         break;
                     default:
