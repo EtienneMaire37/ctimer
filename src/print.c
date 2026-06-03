@@ -38,3 +38,8 @@ char simple_filter(int x, int y, char ch)
     if (x == COLS - 2) return '-';
     return ch;
 }
+char basic_filter(int x, int y, char ch)
+{
+    if (x < 2 || y < 2 || x > COLS - 3 || y > LINES - 3) return 0;
+    return ch;
+}

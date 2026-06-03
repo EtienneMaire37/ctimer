@@ -19,6 +19,11 @@
 #include "print.h"
 #include "time_conversion.h"
 
+#define YELLOW_TEXT     COLOR_PAIR(1)
+#define BLUE_TEXT       COLOR_PAIR(2)
+#define GREEN_TEXT      COLOR_PAIR(3)
+#define BLUE_HIGHLIGHT  COLOR_PAIR(4)
+
 bool setup_rendering_and_xml_data = false;
 xml_tag_t* first_tag;
 xml_tag_t *GameName, *CategoryName, *FirstSegment;
@@ -43,21 +48,27 @@ void sigwinch(int sig)
 
         clear();
 
+        attron(BLUE_TEXT);
         border(0, 0, 0, 0, 0, 0, 0, 0);
+        attroff(BLUE_TEXT);
+        attron(YELLOW_TEXT);
         print_at(2, 1, simple_filter, "%s - %s", GameName->data, CategoryName->data);
+        attroff(YELLOW_TEXT);
         int seg = 0;
         xml_tag_t* Segment = FirstSegment;
         float cumul_pb = 0;
         // TODO: Get the PB not best time
         while (Segment && seg < LINES - 8)
         {
+            if (seg == 0) attron(BLUE_HIGHLIGHT);
             xml_tag_t* Name = xml_get_child(Segment, "Name");
             xml_tag_t* BestSegmentTime = xml_get_child(Segment, "BestSegmentTime");
             xml_tag_t* RealTime = xml_get_child(BestSegmentTime, "RealTime");
-            int size = print_at(3, 3 + seg, simple_filter, "* %-*s", COLS - 20, Name ? Name->data : "<Segment>");
+            print_at(2, 3 + seg, basic_filter, " * %-*s", COLS - 7, Name ? Name->data : "<Segment>");
             if (RealTime)
                 cumul_pb += time_to_seconds(RealTime->data);
             print_time_at(3 + seg, cumul_pb);
+            if (seg == 0) attroff(BLUE_HIGHLIGHT);
             Segment = Segment->next;
             seg++;
         }
@@ -71,14 +82,17 @@ void sigwinch(int sig)
                 if (RealTime)
                     cumul_pb += time_to_seconds(RealTime->data);
                 Segment = Segment->next;
+                seg++;
             }
+            if (seg == 0) attron(BLUE_HIGHLIGHT);
             xml_tag_t* Name = xml_get_child(Segment, "Name");
             xml_tag_t* BestSegmentTime = xml_get_child(Segment, "BestSegmentTime");
             xml_tag_t* RealTime = xml_get_child(BestSegmentTime, "RealTime");
-            int size = print_at(3, LINES - 4, simple_filter, "* %s", Name ? Name->data : "<Segment>");
+            print_at(2, LINES - 4, basic_filter, " * %s", Name ? Name->data : "<Segment>");
             if (RealTime)
                 cumul_pb += time_to_seconds(RealTime->data);
             print_time_at(LINES - 4, cumul_pb);
+            if (seg == 0) attroff(BLUE_HIGHLIGHT);
         }
     }
     else
@@ -93,7 +107,11 @@ void sigwinch(int sig)
         last_time = new_time;
 
         if (LINES > 3)
+        {
+            attron(GREEN_TEXT);
             print_time_at(LINES - 2, elapsed_time);
+            attroff(GREEN_TEXT);
+        }
     }
 
     refresh();
@@ -173,6 +191,11 @@ int main(int argc, char** argv)
     noecho();
     cbreak();
     curs_set(0);
+    start_color();
+    init_pair(1, COLOR_YELLOW, COLOR_BLACK);
+    init_pair(2, COLOR_BLUE, COLOR_BLACK);
+    init_pair(3, COLOR_GREEN, COLOR_BLACK);
+    init_pair(4, COLOR_WHITE, COLOR_BLUE);
 
     setup_rendering_and_xml_data = true;
 
