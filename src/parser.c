@@ -172,7 +172,20 @@ xml_tag_t* xml_get_tag(xml_tag_t* first_tag, const char* path)
             if (!current_token) return first_tag;
             first_tag = first_tag->in;
         }
-        first_tag = first_tag->next;
+        else
+            first_tag = first_tag->next;
+    }
+    return NULL;
+}
+
+xml_tag_t* xml_get_child(xml_tag_t* tag, const char* name)
+{
+    if (!tag) return NULL;
+    tag = tag->in;
+    while (tag)
+    {
+        if (strcmp(tag->name, name) == 0) return tag;
+        tag = tag->next;
     }
     return NULL;
 }

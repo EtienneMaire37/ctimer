@@ -17,6 +17,7 @@
 #include "input.h"
 #include "timer.h"
 #include "print.h"
+#include "time_conversion.h"
 
 bool setup_rendering_and_xml_data = false;
 xml_tag_t* first_tag;
@@ -46,10 +47,17 @@ void sigwinch(int sig)
         print_at(2, 1, simple_filter, "%s - %s", GameName->data, CategoryName->data);
         int seg = 0;
         xml_tag_t* Segment = FirstSegment;
+        float cumul_pb = 0;
+        // TODO: Get the PB not best time
         while (Segment && seg < LINES - 7)
         {
-            if (Segment->in)
-                print_at(3, 3 + seg, simple_filter, "* %s", Segment->in->data);
+            xml_tag_t* Name = xml_get_child(Segment, "Name");
+            xml_tag_t* BestSegmentTime = xml_get_child(Segment, "BestSegmentTime");
+            xml_tag_t* RealTime = xml_get_child(BestSegmentTime, "RealTime");
+            int size = print_at(3, 3 + seg, simple_filter, "* %-*s", COLS - 20, Name ? Name->data : "<Segment>");
+            if (RealTime)
+                cumul_pb += time_to_seconds(RealTime->data);
+            print_time_at(3 + seg, cumul_pb);
             Segment = Segment->next;
             seg++;
         }
@@ -57,9 +65,20 @@ void sigwinch(int sig)
         if (Segment && LINES > 7)
         {
             while (Segment->next)
+            {
+                xml_tag_t* BestSegmentTime = xml_get_child(Segment, "BestSegmentTime");
+                xml_tag_t* RealTime = xml_get_child(BestSegmentTime, "RealTime");
+                if (RealTime)
+                    cumul_pb += time_to_seconds(RealTime->data);
                 Segment = Segment->next;
-            if (Segment->in)
-                print_at(3, LINES - 3, simple_filter, "* %s", Segment->in->data);
+            }
+            xml_tag_t* Name = xml_get_child(Segment, "Name");
+            xml_tag_t* BestSegmentTime = xml_get_child(Segment, "BestSegmentTime");
+            xml_tag_t* RealTime = xml_get_child(BestSegmentTime, "RealTime");
+            int size = print_at(3, LINES - 3, simple_filter, "* %s", Name ? Name->data : "<Segment>");
+            if (RealTime)
+                cumul_pb += time_to_seconds(RealTime->data);
+            print_time_at(LINES - 3, cumul_pb);
         }
     }
     else
@@ -73,7 +92,8 @@ void sigwinch(int sig)
         }
         last_time = new_time;
 
-        print_at(1, LINES - 2, simple_filter, "%*.2fs", COLS - 4, elapsed_time);
+        if (LINES > 3)
+            print_time_at(LINES - 2, elapsed_time);
     }
 
     refresh();
