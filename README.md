@@ -7,6 +7,10 @@ ctimer is a speedrun timer for the terminal written in C.
 ctimer currently only supports linux.
 If you want support for any other OS, feel free to create an [issue](https://github.com/EtienneMaire37/ctimer/issues).
 
+## Screenshots
+
+![INFRA - Beat Part 1](/screenshots/img1.png)
+
 ## Building
 
 Clone the repo:
