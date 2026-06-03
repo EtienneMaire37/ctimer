@@ -49,7 +49,7 @@ void sigwinch(int sig)
         xml_tag_t* Segment = FirstSegment;
         float cumul_pb = 0;
         // TODO: Get the PB not best time
-        while (Segment && seg < LINES - 7)
+        while (Segment && seg < LINES - 8)
         {
             xml_tag_t* Name = xml_get_child(Segment, "Name");
             xml_tag_t* BestSegmentTime = xml_get_child(Segment, "BestSegmentTime");
@@ -62,7 +62,7 @@ void sigwinch(int sig)
             seg++;
         }
 
-        if (Segment && LINES > 7)
+        if (Segment && LINES > 6)
         {
             while (Segment->next)
             {
@@ -75,10 +75,10 @@ void sigwinch(int sig)
             xml_tag_t* Name = xml_get_child(Segment, "Name");
             xml_tag_t* BestSegmentTime = xml_get_child(Segment, "BestSegmentTime");
             xml_tag_t* RealTime = xml_get_child(BestSegmentTime, "RealTime");
-            int size = print_at(3, LINES - 3, simple_filter, "* %s", Name ? Name->data : "<Segment>");
+            int size = print_at(3, LINES - 4, simple_filter, "* %s", Name ? Name->data : "<Segment>");
             if (RealTime)
                 cumul_pb += time_to_seconds(RealTime->data);
-            print_time_at(LINES - 3, cumul_pb);
+            print_time_at(LINES - 4, cumul_pb);
         }
     }
     else
