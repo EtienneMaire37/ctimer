@@ -1,5 +1,10 @@
 # ctimer
 
+<p align="center">
+<img alt="GitHub Actions Workflow Status" src="https://img.shields.io/github/actions/workflow/status/EtienneMaire37/ctimer/cmake-multi-platform.yml">
+<img alt="GitHub commit activity" src="https://img.shields.io/github/commit-activity/m/EtienneMaire37/ctimer">
+</p>
+
 ctimer is a speedrun timer for the terminal written in C.
 
 ## Cross platform support
