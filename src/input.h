@@ -1,5 +1,6 @@
 #pragma once
 
+#include <signal.h>
 #include <sys/ioctl.h>
 #include <linux/input.h>
 #include <fcntl.h>
@@ -16,6 +17,8 @@ extern int keyboard_fd;
 
 extern char ____event_buffer[32];
 #define event_(n) ({ snprintf(____event_buffer, sizeof(____event_buffer) - 1, "/dev/input/event%u", (n)); ____event_buffer; })
+
+void sigwinch(int);
 
 static inline bool is_keyboard(int fd)
 {
@@ -44,6 +47,7 @@ static inline void init_keyboard()
 
 static inline void handle_input_and_timeout()
 {
+    // * 10ms
     struct timespec timeout = { .tv_sec = 0, .tv_nsec = 10000000 };
     fd_set rd_set;
     FD_ZERO(&rd_set);
@@ -61,14 +65,29 @@ static inline void handle_input_and_timeout()
                     switch (event.code)
                     {
                     case KEY_F1:
+                    split:
                         if (timer_ispaused)
+                        {
                             timer_ispaused = false;
+                            if (current_segment == -1)
+                                current_segment = 0;
+                        }
+                        else
+                            current_segment++;
+                        if (current_segment > total_segments)
+                            goto reset;
+                        sigwinch(1);
                         break;
                     case KEY_F2:
+                    reset:
                         timer_ispaused = true;
                         elapsed_time = 0;
+                        current_segment = -1;
+                        sigwinch(1);
                         break;
                     case KEY_F3:
+                        if (current_segment == -1)
+                            goto split;
                         timer_ispaused ^= true;
                         break;
                     default:

@@ -38,13 +38,16 @@ void sigwinch(int sig)
 
     if (atomic_flag_test_and_set(&sigwinch_test)) return;
 
-    if (sig == SIGWINCH)
+    if (sig == SIGWINCH || sig == 1)
     {
-        endwin();
-        initscr();
-        struct winsize ws;
-        ioctl(STDIN_FILENO, TIOCGWINSZ, &ws);
-        resizeterm(ws.ws_row, ws.ws_col);
+        if (sig == SIGWINCH)
+        {
+            endwin();
+            initscr();
+            struct winsize ws;
+            ioctl(STDIN_FILENO, TIOCGWINSZ, &ws);
+            resizeterm(ws.ws_row, ws.ws_col);
+        }
 
         clear();
 
@@ -60,7 +63,7 @@ void sigwinch(int sig)
         // TODO: Get the PB not best time
         while (Segment && seg < LINES - 8)
         {
-            if (seg == 0) attron(BLUE_HIGHLIGHT);
+            if (seg == current_segment) attron(BLUE_HIGHLIGHT);
             xml_tag_t* Name = xml_get_child(Segment, "Name");
             xml_tag_t* BestSegmentTime = xml_get_child(Segment, "BestSegmentTime");
             xml_tag_t* RealTime = xml_get_child(BestSegmentTime, "RealTime");
@@ -68,7 +71,7 @@ void sigwinch(int sig)
             if (RealTime)
                 cumul_pb += time_to_seconds(RealTime->data);
             print_time_at(3 + seg, cumul_pb);
-            if (seg == 0) attroff(BLUE_HIGHLIGHT);
+            if (seg == current_segment) attroff(BLUE_HIGHLIGHT);
             Segment = Segment->next;
             seg++;
         }
@@ -84,15 +87,15 @@ void sigwinch(int sig)
                 Segment = Segment->next;
                 seg++;
             }
-            if (seg == 0) attron(BLUE_HIGHLIGHT);
+            if (seg == current_segment) attron(BLUE_HIGHLIGHT);
             xml_tag_t* Name = xml_get_child(Segment, "Name");
             xml_tag_t* BestSegmentTime = xml_get_child(Segment, "BestSegmentTime");
             xml_tag_t* RealTime = xml_get_child(BestSegmentTime, "RealTime");
-            print_at(2, LINES - 4, basic_filter, " * %s", Name ? Name->data : "<Segment>");
+            print_at(2, LINES - 4, basic_filter, " * %-*s", COLS - 7, Name ? Name->data : "<Segment>");
             if (RealTime)
                 cumul_pb += time_to_seconds(RealTime->data);
             print_time_at(LINES - 4, cumul_pb);
-            if (seg == 0) attroff(BLUE_HIGHLIGHT);
+            if (seg == current_segment) attroff(BLUE_HIGHLIGHT);
         }
     }
     else
@@ -178,6 +181,10 @@ int main(int argc, char** argv)
         fprintf(stderr, "No segments!");
         return 3;
     }
+    xml_tag_t* Segment = FirstSegment;
+    total_segments = 0;
+    while ((Segment = Segment->next))
+        total_segments++;
 
     init_keyboard();
 
@@ -199,7 +206,7 @@ int main(int argc, char** argv)
 
     setup_rendering_and_xml_data = true;
 
-    sigwinch(SIGWINCH);
+    sigwinch(1);
 
     while (true)
     {
