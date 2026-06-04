@@ -15,7 +15,7 @@ If you want support for any other OS, feel free to create an [issue](https://git
 ## Screenshots
 
 ![INFRA - Beat Part 1](/screenshots/img1.png)
-![Rain World - Peebles%](/screenshots/img2.png)
+![Rain World - Pebbles%](/screenshots/img2.png)
 
 ## Building
 
