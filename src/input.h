@@ -74,7 +74,7 @@ static inline void handle_input_and_timeout()
                         }
                         else
                             current_segment++;
-                        if (current_segment > total_segments)
+                        if (current_segment >= total_segments)
                             goto reset;
                         sigwinch(1);
                         break;

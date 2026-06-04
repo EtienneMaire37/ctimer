@@ -62,8 +62,8 @@ void sigwinch(int sig)
         float cumul_pb = 0;
         int offset = current_segment - 3 + (LINES <= 9) + (LINES <= 10) + (LINES <= 11);
         if (offset < 0) offset = 0;
-        if (LINES - 8 > total_segments) offset = 0;
-        if (offset && total_segments < LINES - 8 + offset) offset = total_segments - LINES + 8;
+        if (LINES - 8 > total_segments - 1) offset = 0;
+        if (offset && total_segments - 1 < LINES - 8 + offset) offset = total_segments - 1 - LINES + 8;
         // TODO: Get the PB not best time
         while (Segment && seg < LINES - 8 + offset)
         {
@@ -84,7 +84,7 @@ void sigwinch(int sig)
             seg++;
         }
 
-        if (Segment && LINES > 8 - offset)
+        if (Segment && LINES > 8)
         {
             while (Segment->next)
             {
@@ -135,12 +135,8 @@ int main(int argc, char** argv)
     FILE* input_file = NULL;
     if (argc != 2)
     {
-        if (argc != 0 || isatty(STDIN_FILENO))
-        {
-            print_usage();
-            return 1;
-        }
-        input_file = stdin;
+        print_usage();
+        return 1;
     }
     if (!input_file)
     {
@@ -161,36 +157,39 @@ int main(int argc, char** argv)
         return 2;
     }
 
-    char* xml_data = malloc(st.st_size);
+    char* xml_data = malloc(st.st_size + 1);
     if (!xml_data)
     {
         perror("ctimer");
         return 2;
     }
     fread(xml_data, st.st_size, 1, input_file);
+    fclose(input_file);
+    xml_data[st.st_size] = 0;
+    input_file = NULL;
 
     first_tag = xml_load_from_text(xml_data);
 
     GameName = xml_get_tag(first_tag, "Run/GameName");
     if (!GameName)
     {
-        fprintf(stderr, "Invalid .lss file!");
+        fprintf(stderr, "Invalid .lss file! (No GameName tag)\n");
         return 3;
     }
     CategoryName = xml_get_tag(first_tag, "Run/CategoryName");
     if (!CategoryName)
     {
-        fprintf(stderr, "Invalid .lss file!");
+        fprintf(stderr, "Invalid .lss file! (No CategoryName tag)\n");
         return 3;
     }
     FirstSegment = xml_get_tag(first_tag, "Run/Segments/Segment");
     if (!FirstSegment)
     {
-        fprintf(stderr, "No segments!");
+        fprintf(stderr, "No segments!\n");
         return 3;
     }
     xml_tag_t* Segment = FirstSegment;
-    total_segments = 0;
+    total_segments = 1;
     while ((Segment = Segment->next))
         total_segments++;
 
