@@ -60,23 +60,31 @@ void sigwinch(int sig)
         int seg = 0;
         xml_tag_t* Segment = FirstSegment;
         float cumul_pb = 0;
+        int offset = current_segment - 3 + (LINES <= 9) + (LINES <= 10) + (LINES <= 11);
+        if (offset < 0) offset = 0;
+        if (LINES - 8 > total_segments) offset = 0;
+        if (offset && total_segments < LINES - 8 + offset) offset = total_segments - LINES + 8;
         // TODO: Get the PB not best time
-        while (Segment && seg < LINES - 8)
+        while (Segment && seg < LINES - 8 + offset)
         {
-            if (seg == current_segment) attron(BLUE_HIGHLIGHT);
             xml_tag_t* Name = xml_get_child(Segment, "Name");
             xml_tag_t* BestSegmentTime = xml_get_child(Segment, "BestSegmentTime");
             xml_tag_t* RealTime = xml_get_child(BestSegmentTime, "RealTime");
-            print_at(2, 3 + seg, basic_filter, " * %-*s", COLS - 7, Name ? Name->data : "<Segment>");
             if (RealTime)
                 cumul_pb += time_to_seconds(RealTime->data);
-            print_time_at(3 + seg, cumul_pb);
-            if (seg == current_segment) attroff(BLUE_HIGHLIGHT);
+
+            if (seg >= offset)
+            {
+                if (seg == current_segment) attron(BLUE_HIGHLIGHT);
+                print_at(2, 3 + seg - offset, basic_filter, " * %-*s", COLS - 7, Name ? Name->data : "<Segment>");
+                print_time_at(3 + seg - offset, cumul_pb);
+                if (seg == current_segment) attroff(BLUE_HIGHLIGHT);
+            }
             Segment = Segment->next;
             seg++;
         }
 
-        if (Segment && LINES > 6)
+        if (Segment && LINES > 8 - offset)
         {
             while (Segment->next)
             {
@@ -87,13 +95,13 @@ void sigwinch(int sig)
                 Segment = Segment->next;
                 seg++;
             }
-            if (seg == current_segment) attron(BLUE_HIGHLIGHT);
             xml_tag_t* Name = xml_get_child(Segment, "Name");
             xml_tag_t* BestSegmentTime = xml_get_child(Segment, "BestSegmentTime");
             xml_tag_t* RealTime = xml_get_child(BestSegmentTime, "RealTime");
-            print_at(2, LINES - 4, basic_filter, " * %-*s", COLS - 7, Name ? Name->data : "<Segment>");
             if (RealTime)
                 cumul_pb += time_to_seconds(RealTime->data);
+            if (seg == current_segment) attron(BLUE_HIGHLIGHT);
+            print_at(2, LINES - 4, basic_filter, " * %-*s", COLS - 7, Name ? Name->data : "<Segment>");
             print_time_at(LINES - 4, cumul_pb);
             if (seg == current_segment) attroff(BLUE_HIGHLIGHT);
         }
