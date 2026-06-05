@@ -70,7 +70,10 @@ static inline void handle_input_and_timeout()
                         {
                             timer_ispaused = false;
                             if (current_segment == -1)
+                            {
                                 current_segment = 0;
+                                elapsed_time = 0;
+                            }
                         }
                         else
                             current_segment++;
@@ -79,9 +82,9 @@ static inline void handle_input_and_timeout()
                         sigwinch(1);
                         break;
                     case KEY_F2:
+                        elapsed_time = 0;
                     reset:
                         timer_ispaused = true;
-                        elapsed_time = 0;
                         current_segment = -1;
                         sigwinch(1);
                         break;
