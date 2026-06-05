@@ -16,6 +16,7 @@ If you want support for any other OS, feel free to create an [issue](https://git
 
 ![INFRA - Beat Part 1](/screenshots/img1.png)
 ![Rain World - Pebbles%](/screenshots/img2.png)
+![Celeste - 100%](/screenshots/img3.png)
 
 ## Building
 
