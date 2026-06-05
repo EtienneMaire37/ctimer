@@ -26,9 +26,22 @@ int print_at(int x, int y, char (*filter)(int, int, char), const char* fmt, ...)
 
 void print_time_at(int y, float time)
 {
-    unsigned int minutes = (unsigned int)(time / 60) % 60, seconds = (unsigned int)time % 60, milliseconds = (unsigned int)(time * 1000) % 1000;
+    unsigned int hours = (unsigned int)(time / 3600), minutes = (unsigned int)(time / 60) % 60, seconds = (unsigned int)time % 60, milliseconds = (unsigned int)(time * 1000) % 1000;
     char buffer[64] = {0};
-    int size = snprintf(buffer, sizeof(buffer) - 1, " %2u:%02u.%02u", minutes, seconds, milliseconds / 10);
+    int size = 0;
+    bool print_all = false;
+    if (hours)
+    {
+        size += snprintf(&buffer[size], sizeof(buffer) - 1, "%u:", hours);
+        print_all = true;
+    }
+    if (minutes || print_all)
+    {
+        size += snprintf(&buffer[size], sizeof(buffer) - 1, "%0*u:", print_all ? 2 : 1, minutes);
+        print_all = true;
+    }
+    size += snprintf(&buffer[size], sizeof(buffer) - 1, "%0*u.%02u", print_all ? 2 : 1, seconds, milliseconds / 10);
+    print_at(COLS - size - 3, y, simple_filter, " ");
     print_at(COLS - size - 2, y, simple_filter, "%s", buffer);
 }
 
